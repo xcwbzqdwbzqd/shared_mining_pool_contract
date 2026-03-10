@@ -48,6 +48,7 @@ abstract contract SharedMiningPoolV2Base is Test {
         botcoin = new MockERC20("BOTCOIN", "BOT", 18);
         mining = new MockMiningV2(address(botcoin));
         bonus = new MockBonusEpoch(address(botcoin));
+        bonus.setMining(address(mining));
 
         pool = new SharedMiningPoolV2({
             mining_: address(mining),
@@ -74,6 +75,6 @@ abstract contract SharedMiningPoolV2Base is Test {
     /// @notice This helper moves mining epoch and triggers pool checkpoint.
     function _rollToEpoch(uint64 epoch) internal {
         mining.setEpoch(epoch);
-        pool.checkpointEpoch();
+        pool.processEpochCheckpoint();
     }
 }

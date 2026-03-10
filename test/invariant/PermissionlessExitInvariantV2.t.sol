@@ -14,7 +14,7 @@ contract PermissionlessExitInvariantV2Test is SharedMiningPoolV2Base {
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
     }
 
     /// @notice This invariant-style check verifies non-operator caller can progress all exit transitions.
@@ -28,7 +28,7 @@ contract PermissionlessExitInvariantV2Test is SharedMiningPoolV2Base {
         vm.warp(readyAt);
 
         vm.prank(arbitraryCaller);
-        pool.finalizeWithdraw();
+        pool.completeWithdraw();
 
         vm.prank(arbitraryCaller);
         pool.restake();

@@ -17,13 +17,13 @@ contract ClaimFlowV2Test is SharedMiningPoolV2Base {
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
 
         mining.setSubmitCreditDelta(address(pool), 2);
 
         bytes memory miningCalldata = abi.encodeWithSelector(MockMiningV2.submitReceipt.selector, bytes("receipt"));
         vm.prank(operator);
-        pool.submitReceiptToMining(miningCalldata);
+        pool.submitToMining(miningCalldata);
     }
 
     /// @notice This test verifies regular and bonus claims update user payouts and fee accounting.
@@ -39,8 +39,8 @@ contract ClaimFlowV2Test is SharedMiningPoolV2Base {
         uint64[] memory epochs = new uint64[](1);
         epochs[0] = 2;
 
-        pool.claimRewards(epochs);
-        pool.claimBonusRewards(epochs);
+        pool.triggerClaim(epochs);
+        pool.triggerBonusClaim(epochs);
 
         // fee = 5% of (1000 + 200) = 60
         assertEq(botcoin.balanceOf(feeRecipient), 60e18);
@@ -48,10 +48,10 @@ contract ClaimFlowV2Test is SharedMiningPoolV2Base {
         assertEq(pool.epochTotalNetReward(2), 1_140e18);
 
         vm.prank(user1);
-        pool.claimUser(epochs, user1);
+        pool.claimMyRewards(epochs, user1);
 
         vm.prank(user2);
-        pool.claimUser(epochs, user2);
+        pool.claimMyRewards(epochs, user2);
 
         // two users with equal shares split net reward evenly
         assertEq(botcoin.balanceOf(user1), 200_000_000e18 - 100e18 + 570e18);
@@ -67,10 +67,10 @@ contract ClaimFlowV2Test is SharedMiningPoolV2Base {
         uint64[] memory epochs = new uint64[](1);
         epochs[0] = 2;
 
-        pool.claimRewards(epochs);
+        pool.triggerClaim(epochs);
 
         vm.prank(user1);
-        pool.claimUser(epochs, user1);
+        pool.claimMyRewards(epochs, user1);
 
         uint256 afterRegular = botcoin.balanceOf(user1);
 
@@ -78,10 +78,10 @@ contract ClaimFlowV2Test is SharedMiningPoolV2Base {
         bonus.setBonusClaimsOpen(2, true);
         bonus.fundBonusReward(2, 100e18);
 
-        pool.claimBonusRewards(epochs);
+        pool.triggerBonusClaim(epochs);
 
         vm.prank(user1);
-        pool.claimUser(epochs, user1);
+        pool.claimMyRewards(epochs, user1);
 
         assertGt(botcoin.balanceOf(user1), afterRegular);
     }

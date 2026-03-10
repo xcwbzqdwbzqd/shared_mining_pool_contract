@@ -16,7 +16,7 @@ contract PrincipalConservationInvariantV2Test is SharedMiningPoolV2Base {
         pool.deposit(150e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
     }
 
     /// @notice This invariant-style check ensures principal liabilities are covered by staked plus liquid balances.

@@ -4,9 +4,9 @@ pragma solidity ^0.8.23;
 import {SharedMiningPoolV2} from "../../src/SharedMiningPoolV2.sol";
 import {SharedMiningPoolV2Base} from "./SharedMiningPoolV2Base.t.sol";
 
-/// @notice This test verifies permissionless phase transitions and principal exit.
+/// @notice This test verifies permissionless phase transitions and principal-share exit.
 contract PoolPhaseTransitionsV2Test is SharedMiningPoolV2Base {
-    /// @notice This setup prepares staked principal so unstake/finalize/restake path is reachable.
+    /// @notice This setup prepares staked principal so unstake/complete-withdraw/restake path is reachable.
     function setUp() public override {
         super.setUp();
 
@@ -14,10 +14,10 @@ contract PoolPhaseTransitionsV2Test is SharedMiningPoolV2Base {
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
     }
 
-    /// @notice This test verifies unstake, finalize withdraw, and restake are permissionless.
+    /// @notice This test verifies unstake, complete withdraw, and restake are permissionless.
     function testPermissionlessTransitionPath() external {
         vm.prank(user2);
         pool.unstakeAtEpochEnd();
@@ -28,7 +28,7 @@ contract PoolPhaseTransitionsV2Test is SharedMiningPoolV2Base {
         vm.warp(readyAt);
 
         vm.prank(user2);
-        pool.finalizeWithdraw();
+        pool.completeWithdraw();
 
         assertEq(uint256(pool.phase()), uint256(SharedMiningPoolV2.PoolPhase.WithdrawnIdle));
 
@@ -38,25 +38,25 @@ contract PoolPhaseTransitionsV2Test is SharedMiningPoolV2Base {
         assertEq(uint256(pool.phase()), uint256(SharedMiningPoolV2.PoolPhase.ActiveStaked));
     }
 
-    /// @notice This test verifies user can withdraw principal only after pool funds are withdrawn from mining.
-    function testPrincipalWithdrawInWithdrawnIdle() external {
+    /// @notice This test verifies user can claim principal share only after pool funds are withdrawn from mining.
+    function testClaimMyShareInWithdrawnIdle() external {
         pool.unstakeAtEpochEnd();
 
         uint64 readyAt = mining.withdrawableAt(address(pool));
         vm.warp(readyAt);
 
-        pool.finalizeWithdraw();
+        pool.completeWithdraw();
 
         uint256 before = botcoin.balanceOf(user1);
         vm.prank(user1);
-        pool.withdrawPrincipal(40e18, user1);
+        pool.claimMyShare(40e18, user1);
 
         assertEq(botcoin.balanceOf(user1), before + 40e18);
         assertEq(pool.userPrincipal(user1), 60e18);
     }
 
-    /// @notice This test verifies principal withdrawal is rejected before WithdrawnIdle phase.
-    function testWithdrawPrincipalRejectedBeforeFinalize() external {
+    /// @notice This test verifies principal-share claim is rejected before complete withdraw.
+    function testClaimMyShareRejectedBeforeCompleteWithdraw() external {
         vm.startPrank(user1);
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -65,7 +65,7 @@ contract PoolPhaseTransitionsV2Test is SharedMiningPoolV2Base {
                 SharedMiningPoolV2.PoolPhase.ActiveStaked
             )
         );
-        pool.withdrawPrincipal(1e18, user1);
+        pool.claimMyShare(1e18, user1);
         vm.stopPrank();
     }
 }

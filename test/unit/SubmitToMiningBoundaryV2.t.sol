@@ -6,7 +6,7 @@ import {MockMiningV2} from "../mocks/MockMiningV2.sol";
 import {SharedMiningPoolV2Base} from "./SharedMiningPoolV2Base.t.sol";
 
 /// @notice This test verifies receipt forwarding boundaries.
-contract SubmitReceiptBoundaryV2Test is SharedMiningPoolV2Base {
+contract SubmitToMiningBoundaryV2Test is SharedMiningPoolV2Base {
     /// @notice This setup prepares one active epoch with staked principal for submit tests.
     function setUp() public override {
         super.setUp();
@@ -15,7 +15,7 @@ contract SubmitReceiptBoundaryV2Test is SharedMiningPoolV2Base {
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
     }
 
     /// @notice This test verifies only immutable operator can submit receipts.
@@ -24,7 +24,7 @@ contract SubmitReceiptBoundaryV2Test is SharedMiningPoolV2Base {
 
         vm.startPrank(user1);
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.OnlyOperator.selector));
-        pool.submitReceiptToMining(miningCalldata);
+        pool.submitToMining(miningCalldata);
         vm.stopPrank();
     }
 
@@ -40,7 +40,7 @@ contract SubmitReceiptBoundaryV2Test is SharedMiningPoolV2Base {
                 MockMiningV2.submitReceipt.selector
             )
         );
-        pool.submitReceiptToMining(badCalldata);
+        pool.submitToMining(badCalldata);
         vm.stopPrank();
     }
 
@@ -54,7 +54,7 @@ contract SubmitReceiptBoundaryV2Test is SharedMiningPoolV2Base {
         vm.expectRevert(
             abi.encodeWithSelector(SharedMiningPoolV2.CreditsDidNotIncrease.selector, uint64(2), uint64(0), uint64(0))
         );
-        pool.submitReceiptToMining(miningCalldata);
+        pool.submitToMining(miningCalldata);
         vm.stopPrank();
     }
 }

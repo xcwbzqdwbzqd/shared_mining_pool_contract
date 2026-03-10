@@ -7,7 +7,7 @@ import {SharedMiningPoolV2Base} from "../unit/SharedMiningPoolV2Base.t.sol";
 contract LargeDepositorSetClaimScalabilityV2Test is SharedMiningPoolV2Base {
     /// @notice This test simulates many depositors contributing principal and validates user claim outcome.
     function testLargeDepositorSetSingleUserClaim() external {
-        uint256 depositorCount = 120;
+        uint256 depositorCount = 1_024;
         uint256 depositAmount = 10e18;
 
         for (uint256 i = 1; i <= depositorCount; i++) {
@@ -22,7 +22,7 @@ contract LargeDepositorSetClaimScalabilityV2Test is SharedMiningPoolV2Base {
         }
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
 
         mining.fundEpochReward(2, 12_000e18);
         _rollToEpoch(3);
@@ -30,13 +30,13 @@ contract LargeDepositorSetClaimScalabilityV2Test is SharedMiningPoolV2Base {
         uint64[] memory epochs = new uint64[](1);
         epochs[0] = 2;
 
-        pool.claimRewards(epochs);
+        pool.triggerClaim(epochs);
 
         address claimant = vm.addr(10_001);
         uint256 beforeBalance = botcoin.balanceOf(claimant);
 
         vm.prank(claimant);
-        pool.claimUser(epochs, claimant);
+        pool.claimMyRewards(epochs, claimant);
 
         assertGt(botcoin.balanceOf(claimant), beforeBalance);
     }

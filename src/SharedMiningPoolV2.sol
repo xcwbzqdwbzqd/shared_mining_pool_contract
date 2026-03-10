@@ -99,7 +99,10 @@ contract SharedMiningPoolV2 {
     /// @notice This error indicates a claim call returned successfully but transferred zero tokens for the epoch.
     error ZeroGrossReward(uint64 epoch);
 
-    /// @notice This error indicates cooldown is not finished for finalize withdraw operation.
+    /// @notice This error indicates BonusEpoch is not bound to the expected MiningV2 contract.
+    error BonusMiningMismatch(address expectedMining, address actualMining);
+
+    /// @notice This error indicates cooldown is not finished for complete withdraw operation.
     error CooldownNotFinished(uint64 withdrawableAtTimestamp, uint64 currentTimestamp);
 
     /// @notice This error indicates caller requested principal withdrawal above available principal.
@@ -152,7 +155,7 @@ contract SharedMiningPoolV2 {
     /// @notice This event records permissionless unstake request execution.
     event UnstakeRequested(uint64 indexed epoch, address indexed caller);
 
-    /// @notice This event records permissionless finalize withdraw execution after cooldown.
+    /// @notice This event records permissionless complete withdraw execution after cooldown.
     event UnstakeFinalized(uint64 indexed epoch, address indexed caller);
 
     /// @notice This event records permissionless restake execution.
@@ -328,9 +331,12 @@ contract SharedMiningPoolV2 {
         maxEpochsPerClaim = maxEpochsPerClaim_;
 
         address tokenFromMining = IMiningV2(mining_).botcoinToken();
-        address tokenFromBonus = IBonusEpoch(bonusEpoch_).botcoinToken();
-        if (tokenFromMining == address(0) || tokenFromBonus == address(0) || tokenFromMining != tokenFromBonus) {
+        address miningFromBonus = IBonusEpoch(bonusEpoch_).mining();
+        if (tokenFromMining == address(0) || miningFromBonus == address(0)) {
             revert ZeroAddress();
+        }
+        if (miningFromBonus != mining_) {
+            revert BonusMiningMismatch(mining_, miningFromBonus);
         }
         botcoin = IERC20Minimal(tokenFromMining);
 
@@ -417,8 +423,8 @@ contract SharedMiningPoolV2 {
         emit Deposited(msg.sender, amount, current, activationEpoch);
     }
 
-    /// @notice This function allows user to withdraw principal only after pool principal is back from mining.
-    function withdrawPrincipal(uint256 amount, address to) external nonReentrant {
+    /// @notice This function allows user to claim principal share only after pool principal is back from mining.
+    function claimMyShare(uint256 amount, address to) external nonReentrant {
         if (phase != PoolPhase.WithdrawnIdle) {
             revert InvalidPhase(PoolPhase.WithdrawnIdle, phase);
         }
@@ -485,8 +491,8 @@ contract SharedMiningPoolV2 {
         emit UnstakeRequested(current, msg.sender);
     }
 
-    /// @notice This function finalizes unstake after cooldown and returns principal from mining to pool custody.
-    function finalizeWithdraw() external nonReentrant {
+    /// @notice This function completes unstake after cooldown and returns principal from mining to pool custody.
+    function completeWithdraw() external nonReentrant {
         if (phase != PoolPhase.Cooldown) {
             revert InvalidPhase(PoolPhase.Cooldown, phase);
         }
@@ -529,8 +535,8 @@ contract SharedMiningPoolV2 {
         emit Restaked(current, stakedDelta, msg.sender);
     }
 
-    /// @notice This function permissionlessly stakes principal delta while pool remains in active phase.
-    function stakePrincipal() external nonReentrant {
+    /// @notice This function permissionlessly stakes available principal delta while pool remains in active phase.
+    function stakeAvailablePrincipal() external nonReentrant {
         if (phase != PoolPhase.ActiveStaked) {
             revert InvalidPhase(PoolPhase.ActiveStaked, phase);
         }
@@ -550,7 +556,7 @@ contract SharedMiningPoolV2 {
     // ============================================================
 
     /// @notice This function forwards allowed receipt calldata to mining and enforces positive credit delta.
-    function submitReceiptToMining(bytes calldata miningCalldata) external onlyOperator nonReentrant {
+    function submitToMining(bytes calldata miningCalldata) external onlyOperator nonReentrant {
         if (phase != PoolPhase.ActiveStaked) {
             revert InvalidPhase(PoolPhase.ActiveStaked, phase);
         }
@@ -595,8 +601,8 @@ contract SharedMiningPoolV2 {
     // Permissionless Reward Claims
     // ============================================================
 
-    /// @notice This function permissionlessly claims regular mining rewards for ended epochs and updates epoch indices.
-    function claimRewards(uint64[] calldata epochs) external nonReentrant {
+    /// @notice This function permissionlessly triggers regular mining reward claims for ended epochs and updates indices.
+    function triggerClaim(uint64[] calldata epochs) external nonReentrant {
         _checkpointEpoch();
         _validateEpochList(epochs);
 
@@ -636,8 +642,8 @@ contract SharedMiningPoolV2 {
         }
     }
 
-    /// @notice This function permissionlessly claims bonus rewards for eligible epochs and updates epoch indices.
-    function claimBonusRewards(uint64[] calldata epochs) external nonReentrant {
+    /// @notice This function permissionlessly triggers bonus reward claims for eligible epochs and updates epoch indices.
+    function triggerBonusClaim(uint64[] calldata epochs) external nonReentrant {
         _checkpointEpoch();
         _validateEpochList(epochs);
 
@@ -679,7 +685,7 @@ contract SharedMiningPoolV2 {
     }
 
     /// @notice This function allows user to claim owed rewards for a strictly increasing epoch list.
-    function claimUser(uint64[] calldata epochs, address to) external nonReentrant {
+    function claimMyRewards(uint64[] calldata epochs, address to) external nonReentrant {
         if (to == address(0)) {
             revert ZeroAddress();
         }
@@ -738,7 +744,7 @@ contract SharedMiningPoolV2 {
     }
 
     /// @notice This function exposes manual epoch checkpointing for off-chain keepers and tests.
-    function checkpointEpoch() external nonReentrant {
+    function processEpochCheckpoint() external nonReentrant {
         _checkpointEpoch();
     }
 

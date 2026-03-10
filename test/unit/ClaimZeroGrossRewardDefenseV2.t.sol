@@ -14,13 +14,13 @@ contract ClaimZeroGrossRewardDefenseV2Test is SharedMiningPoolV2Base {
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
 
         _rollToEpoch(3);
     }
 
     /// @notice This test verifies regular claims with zero inflow revert and do not mark pool or mining epochs as claimed.
-    function testClaimRewards_RevertsOnZeroGrossReward_AndDoesNotLockEpoch() external {
+    function testTriggerClaim_RevertsOnZeroGrossReward_AndDoesNotLockEpoch() external {
         uint64 epoch = 2;
 
         uint64[] memory epochs = new uint64[](1);
@@ -30,21 +30,21 @@ contract ClaimZeroGrossRewardDefenseV2Test is SharedMiningPoolV2Base {
         assertFalse(mining.epochClaimed(epoch));
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.ZeroGrossReward.selector, epoch));
-        pool.claimRewards(epochs);
+        pool.triggerClaim(epochs);
 
         // The revert must roll back both pool-side and mining-side state.
         assertFalse(pool.epochRegularClaimed(epoch));
         assertFalse(mining.epochClaimed(epoch));
 
         mining.fundEpochReward(epoch, 1_000e18);
-        pool.claimRewards(epochs);
+        pool.triggerClaim(epochs);
 
         assertTrue(pool.epochRegularClaimed(epoch));
         assertTrue(mining.epochClaimed(epoch));
     }
 
     /// @notice This test verifies bonus claims with zero inflow revert and do not mark pool or bonus epochs as claimed.
-    function testClaimBonusRewards_RevertsOnZeroGrossReward_AndDoesNotLockEpoch() external {
+    function testTriggerBonusClaim_RevertsOnZeroGrossReward_AndDoesNotLockEpoch() external {
         uint64 epoch = 2;
 
         uint64[] memory epochs = new uint64[](1);
@@ -57,14 +57,14 @@ contract ClaimZeroGrossRewardDefenseV2Test is SharedMiningPoolV2Base {
         assertFalse(bonus.bonusClaimed(epoch));
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.ZeroGrossReward.selector, epoch));
-        pool.claimBonusRewards(epochs);
+        pool.triggerBonusClaim(epochs);
 
         // The revert must roll back both pool-side and bonus-side state.
         assertFalse(pool.epochBonusClaimed(epoch));
         assertFalse(bonus.bonusClaimed(epoch));
 
         bonus.fundBonusReward(epoch, 200e18);
-        pool.claimBonusRewards(epochs);
+        pool.triggerBonusClaim(epochs);
 
         assertTrue(pool.epochBonusClaimed(epoch));
         assertTrue(bonus.bonusClaimed(epoch));

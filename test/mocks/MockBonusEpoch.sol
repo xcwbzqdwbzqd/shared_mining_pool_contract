@@ -8,6 +8,9 @@ contract MockBonusEpoch {
     /// @notice This immutable stores BOTCOIN token used by bonus mock.
     MockERC20 public immutable botcoin;
 
+    /// @notice This state stores the MiningV2 address bound to this bonus mock.
+    address public mining;
+
     /// @notice This mapping tracks whether an epoch is flagged as bonus epoch.
     mapping(uint64 => bool) public isBonusEpoch;
 
@@ -25,9 +28,9 @@ contract MockBonusEpoch {
         botcoin = MockERC20(botcoinToken_);
     }
 
-    /// @notice This view returns BOTCOIN token address for interface compatibility.
-    function botcoinToken() external view returns (address) {
-        return address(botcoin);
+    /// @notice This test helper sets bound MiningV2 contract address.
+    function setMining(address mining_) external {
+        mining = mining_;
     }
 
     /// @notice This test helper configures bonus epoch flag.

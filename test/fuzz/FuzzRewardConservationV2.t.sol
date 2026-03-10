@@ -16,7 +16,7 @@ contract FuzzRewardConservationV2Test is SharedMiningPoolV2Base {
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
         _rollToEpoch(3);
     }
 
@@ -36,16 +36,16 @@ contract FuzzRewardConservationV2Test is SharedMiningPoolV2Base {
         uint64[] memory epochs = new uint64[](1);
         epochs[0] = 2;
 
-        pool.claimRewards(epochs);
+        pool.triggerClaim(epochs);
         if (bonusAmount != 0) {
-            pool.claimBonusRewards(epochs);
+            pool.triggerBonusClaim(epochs);
         }
 
         vm.prank(user1);
-        pool.claimUser(epochs, user1);
+        pool.claimMyRewards(epochs, user1);
 
         vm.prank(user2);
-        pool.claimUser(epochs, user2);
+        pool.claimMyRewards(epochs, user2);
 
         assertLe(pool.totalRewardsPaid(), pool.totalNetRewardsAccrued());
         assertLe(pool.totalNetRewardsAccrued() - pool.totalRewardsPaid(), 1);

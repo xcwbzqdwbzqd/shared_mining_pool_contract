@@ -18,7 +18,7 @@ This repository contains a V2-only pooled mining contract implementation for BOT
 - User principal accounting is deterministic and on-chain.
 - Critical principal return transitions are permissionless:
   - `unstakeAtEpochEnd()`
-  - `finalizeWithdraw()`
+  - `completeWithdraw()`
   - `restake()`
 - Reward distribution is epoch-based and claimable by users without operator approval.
 - Bonus rewards are claimable through BonusEpoch and distributed via the same share-index accounting path.

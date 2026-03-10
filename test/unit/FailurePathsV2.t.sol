@@ -25,48 +25,50 @@ contract DepositFailurePathsV2Test is SharedMiningPoolV2Base {
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
 
         pool.unstakeAtEpochEnd();
         uint64 readyAt = mining.withdrawableAt(address(pool));
         vm.warp(readyAt);
-        pool.finalizeWithdraw();
+        pool.completeWithdraw();
 
         assertEq(uint256(pool.phase()), uint256(SharedMiningPoolV2.PoolPhase.WithdrawnIdle));
 
         vm.startPrank(user2);
         vm.expectRevert(
-            abi.encodeWithSelector(SharedMiningPoolV2.DepositClosed.selector, SharedMiningPoolV2.PoolPhase.WithdrawnIdle)
+            abi.encodeWithSelector(
+                SharedMiningPoolV2.DepositClosed.selector, SharedMiningPoolV2.PoolPhase.WithdrawnIdle
+            )
         );
         pool.deposit(1e18);
         vm.stopPrank();
     }
 }
 
-/// @notice This unit test suite validates `withdrawPrincipal` failure paths.
-contract WithdrawPrincipalFailurePathsV2Test is SharedMiningPoolV2Base {
+/// @notice This unit test suite validates `claimMyShare` failure paths.
+contract ClaimMyShareFailurePathsV2Test is SharedMiningPoolV2Base {
     function _enterWithdrawnIdleWithDeposit(uint256 amount) internal {
         vm.prank(user1);
         pool.deposit(amount);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
 
         pool.unstakeAtEpochEnd();
         uint64 readyAt = mining.withdrawableAt(address(pool));
         vm.warp(readyAt);
-        pool.finalizeWithdraw();
+        pool.completeWithdraw();
 
         assertEq(uint256(pool.phase()), uint256(SharedMiningPoolV2.PoolPhase.WithdrawnIdle));
     }
 
-    /// @notice This test verifies withdrawPrincipal is rejected in Cooldown phase.
-    function testWithdrawPrincipalRejectedInCooldown() external {
+    /// @notice This test verifies claimMyShare is rejected in Cooldown phase.
+    function testClaimMyShareRejectedInCooldown() external {
         vm.prank(user1);
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
         pool.unstakeAtEpochEnd();
 
         assertEq(uint256(pool.phase()), uint256(SharedMiningPoolV2.PoolPhase.Cooldown));
@@ -79,37 +81,37 @@ contract WithdrawPrincipalFailurePathsV2Test is SharedMiningPoolV2Base {
                 SharedMiningPoolV2.PoolPhase.Cooldown
             )
         );
-        pool.withdrawPrincipal(1e18, user1);
+        pool.claimMyShare(1e18, user1);
         vm.stopPrank();
     }
 
-    /// @notice This test verifies withdrawPrincipal rejects zero amount.
-    function testWithdrawPrincipalRevertsOnZeroAmount() external {
+    /// @notice This test verifies claimMyShare rejects zero amount.
+    function testClaimMyShareRevertsOnZeroAmount() external {
         _enterWithdrawnIdleWithDeposit(100e18);
 
         vm.startPrank(user1);
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.ZeroAmount.selector));
-        pool.withdrawPrincipal(0, user1);
+        pool.claimMyShare(0, user1);
         vm.stopPrank();
     }
 
-    /// @notice This test verifies withdrawPrincipal rejects zero receiver.
-    function testWithdrawPrincipalRevertsOnZeroAddress() external {
+    /// @notice This test verifies claimMyShare rejects zero receiver.
+    function testClaimMyShareRevertsOnZeroAddress() external {
         _enterWithdrawnIdleWithDeposit(100e18);
 
         vm.startPrank(user1);
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.ZeroAddress.selector));
-        pool.withdrawPrincipal(1e18, address(0));
+        pool.claimMyShare(1e18, address(0));
         vm.stopPrank();
     }
 
-    /// @notice This test verifies withdrawPrincipal rejects requests exceeding available principal.
-    function testWithdrawPrincipalRevertsOnInsufficientPrincipal() external {
+    /// @notice This test verifies claimMyShare rejects requests exceeding available principal.
+    function testClaimMyShareRevertsOnInsufficientPrincipal() external {
         _enterWithdrawnIdleWithDeposit(100e18);
 
         vm.startPrank(user1);
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.InsufficientPrincipal.selector, 200e18, 100e18));
-        pool.withdrawPrincipal(200e18, user1);
+        pool.claimMyShare(200e18, user1);
         vm.stopPrank();
     }
 }
@@ -128,7 +130,7 @@ contract UnstakeFailurePathsV2Test is SharedMiningPoolV2Base {
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
         pool.unstakeAtEpochEnd();
 
         vm.expectRevert(
@@ -147,12 +149,12 @@ contract UnstakeFailurePathsV2Test is SharedMiningPoolV2Base {
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
 
         pool.unstakeAtEpochEnd();
         uint64 readyAt = mining.withdrawableAt(address(pool));
         vm.warp(readyAt);
-        pool.finalizeWithdraw();
+        pool.completeWithdraw();
         pool.restake();
 
         uint64 current = mining.currentEpoch();
@@ -163,10 +165,10 @@ contract UnstakeFailurePathsV2Test is SharedMiningPoolV2Base {
     }
 }
 
-/// @notice This unit test suite validates `finalizeWithdraw` failure paths.
-contract FinalizeWithdrawFailurePathsV2Test is SharedMiningPoolV2Base {
-    /// @notice This test verifies finalizeWithdraw is rejected outside Cooldown phase.
-    function testFinalizeWithdrawRejectedInActivePhase() external {
+/// @notice This unit test suite validates `completeWithdraw` failure paths.
+contract CompleteWithdrawFailurePathsV2Test is SharedMiningPoolV2Base {
+    /// @notice This test verifies completeWithdraw is rejected outside Cooldown phase.
+    function testCompleteWithdrawRejectedInActivePhase() external {
         vm.expectRevert(
             abi.encodeWithSelector(
                 SharedMiningPoolV2.InvalidPhase.selector,
@@ -174,39 +176,39 @@ contract FinalizeWithdrawFailurePathsV2Test is SharedMiningPoolV2Base {
                 SharedMiningPoolV2.PoolPhase.ActiveStaked
             )
         );
-        pool.finalizeWithdraw();
+        pool.completeWithdraw();
     }
 
-    /// @notice This test verifies finalizeWithdraw rejects calls before cooldown completion.
-    function testFinalizeWithdrawRevertsBeforeCooldownFinished() external {
+    /// @notice This test verifies completeWithdraw rejects calls before cooldown completion.
+    function testCompleteWithdrawRevertsBeforeCooldownFinished() external {
         vm.prank(user1);
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
         pool.unstakeAtEpochEnd();
 
         uint64 readyAt = mining.withdrawableAt(address(pool));
         uint64 nowTs = uint64(block.timestamp);
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.CooldownNotFinished.selector, readyAt, nowTs));
-        pool.finalizeWithdraw();
+        pool.completeWithdraw();
     }
 }
 
-/// @notice This unit test suite validates `stakePrincipal` failure paths.
-contract StakePrincipalFailurePathsV2Test is SharedMiningPoolV2Base {
-    /// @notice This test verifies stakePrincipal is rejected outside ActiveStaked phase.
-    function testStakePrincipalRejectedInWithdrawnIdle() external {
+/// @notice This unit test suite validates `stakeAvailablePrincipal` failure paths.
+contract StakeAvailablePrincipalFailurePathsV2Test is SharedMiningPoolV2Base {
+    /// @notice This test verifies stakeAvailablePrincipal is rejected outside ActiveStaked phase.
+    function testStakeAvailablePrincipalRejectedInWithdrawnIdle() external {
         vm.prank(user1);
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
         pool.unstakeAtEpochEnd();
         uint64 readyAt = mining.withdrawableAt(address(pool));
         vm.warp(readyAt);
-        pool.finalizeWithdraw();
+        pool.completeWithdraw();
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -215,23 +217,23 @@ contract StakePrincipalFailurePathsV2Test is SharedMiningPoolV2Base {
                 SharedMiningPoolV2.PoolPhase.WithdrawnIdle
             )
         );
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
     }
 
-    /// @notice This test verifies stakePrincipal reverts when delta to stake is zero.
-    function testStakePrincipalRevertsWhenDeltaIsZero() external {
+    /// @notice This test verifies stakeAvailablePrincipal reverts when delta to stake is zero.
+    function testStakeAvailablePrincipalRevertsWhenDeltaIsZero() external {
         vm.prank(user1);
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.RestakeAmountZero.selector));
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
     }
 
-    /// @notice This test verifies stakePrincipal reverts when pool token balance is insufficient.
-    function testStakePrincipalRevertsOnInsufficientBalance() external {
+    /// @notice This test verifies stakeAvailablePrincipal reverts when pool token balance is insufficient.
+    function testStakeAvailablePrincipalRevertsOnInsufficientBalance() external {
         vm.prank(user1);
         pool.deposit(100e18);
 
@@ -242,7 +244,7 @@ contract StakePrincipalFailurePathsV2Test is SharedMiningPoolV2Base {
         botcoin.transfer(user1, 100e18);
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.RestakeInsufficientBalance.selector, 100e18, 0));
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
     }
 }
 
@@ -253,11 +255,11 @@ contract RestakeFailurePathsV2Test is SharedMiningPoolV2Base {
         pool.deposit(amount);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
         pool.unstakeAtEpochEnd();
         uint64 readyAt = mining.withdrawableAt(address(pool));
         vm.warp(readyAt);
-        pool.finalizeWithdraw();
+        pool.completeWithdraw();
     }
 
     /// @notice This test verifies restake is rejected outside WithdrawnIdle phase.
@@ -277,7 +279,7 @@ contract RestakeFailurePathsV2Test is SharedMiningPoolV2Base {
         _enterWithdrawnIdleWithDeposit(100e18);
 
         vm.prank(user1);
-        pool.withdrawPrincipal(100e18, user1);
+        pool.claimMyShare(100e18, user1);
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.RestakeAmountZero.selector));
         pool.restake();
@@ -295,19 +297,19 @@ contract RestakeFailurePathsV2Test is SharedMiningPoolV2Base {
     }
 }
 
-/// @notice This unit test suite validates `claimRewards` failure paths.
-contract ClaimRewardsFailurePathsV2Test is SharedMiningPoolV2Base {
-    /// @notice This test verifies claimRewards rejects empty epoch list.
-    function testClaimRewardsRevertsOnEmptyEpochList() external {
+/// @notice This unit test suite validates `triggerClaim` failure paths.
+contract TriggerClaimFailurePathsV2Test is SharedMiningPoolV2Base {
+    /// @notice This test verifies triggerClaim rejects empty epoch list.
+    function testTriggerClaimRevertsOnEmptyEpochList() external {
         uint64[] memory epochs = new uint64[](0);
         vm.expectRevert(
             abi.encodeWithSelector(SharedMiningPoolV2.InvalidEpochList.selector, uint256(0), pool.maxEpochsPerClaim())
         );
-        pool.claimRewards(epochs);
+        pool.triggerClaim(epochs);
     }
 
-    /// @notice This test verifies claimRewards rejects non-increasing epoch list.
-    function testClaimRewardsRevertsOnNonIncreasingEpochList() external {
+    /// @notice This test verifies triggerClaim rejects non-increasing epoch list.
+    function testTriggerClaimRevertsOnNonIncreasingEpochList() external {
         uint64[] memory epochs = new uint64[](2);
         epochs[0] = 2;
         epochs[1] = 2;
@@ -315,25 +317,25 @@ contract ClaimRewardsFailurePathsV2Test is SharedMiningPoolV2Base {
         vm.expectRevert(
             abi.encodeWithSelector(SharedMiningPoolV2.InvalidEpochList.selector, uint256(2), pool.maxEpochsPerClaim())
         );
-        pool.claimRewards(epochs);
+        pool.triggerClaim(epochs);
     }
 
-    /// @notice This test verifies claimRewards rejects epochs that have not ended.
-    function testClaimRewardsRevertsWhenEpochNotEnded() external {
+    /// @notice This test verifies triggerClaim rejects epochs that have not ended.
+    function testTriggerClaimRevertsWhenEpochNotEnded() external {
         uint64[] memory epochs = new uint64[](1);
         epochs[0] = 1;
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.EpochNotEnded.selector, uint64(1), uint64(1)));
-        pool.claimRewards(epochs);
+        pool.triggerClaim(epochs);
     }
 
-    /// @notice This test verifies claimRewards rejects repeated claims for the same epoch.
-    function testClaimRewardsRevertsWhenAlreadyClaimed() external {
+    /// @notice This test verifies triggerClaim rejects repeated claims for the same epoch.
+    function testTriggerClaimRevertsWhenAlreadyClaimed() external {
         vm.prank(user1);
         pool.deposit(100e18);
 
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
 
         mining.fundEpochReward(2, 1_000e18);
         _rollToEpoch(3);
@@ -341,14 +343,14 @@ contract ClaimRewardsFailurePathsV2Test is SharedMiningPoolV2Base {
         uint64[] memory epochs = new uint64[](1);
         epochs[0] = 2;
 
-        pool.claimRewards(epochs);
+        pool.triggerClaim(epochs);
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.RegularAlreadyClaimed.selector, uint64(2)));
-        pool.claimRewards(epochs);
+        pool.triggerClaim(epochs);
     }
 
-    /// @notice This test verifies claimRewards reverts if no shares exist for the target epoch.
-    function testClaimRewardsRevertsWhenNoSharesForEpoch() external {
+    /// @notice This test verifies triggerClaim reverts if no shares exist for the target epoch.
+    function testTriggerClaimRevertsWhenNoSharesForEpoch() external {
         // No deposits => total shares at epoch-1 is zero.
         mining.fundEpochReward(1, 1_000e18);
         _rollToEpoch(2);
@@ -357,43 +359,43 @@ contract ClaimRewardsFailurePathsV2Test is SharedMiningPoolV2Base {
         epochs[0] = 1;
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.NoSharesForEpoch.selector, uint64(1)));
-        pool.claimRewards(epochs);
+        pool.triggerClaim(epochs);
     }
 }
 
-/// @notice This unit test suite validates `claimBonusRewards` failure paths.
-contract ClaimBonusRewardsFailurePathsV2Test is SharedMiningPoolV2Base {
-    /// @notice This test verifies claimBonusRewards rejects empty epoch list.
-    function testClaimBonusRewardsRevertsOnEmptyEpochList() external {
+/// @notice This unit test suite validates `triggerBonusClaim` failure paths.
+contract TriggerBonusClaimFailurePathsV2Test is SharedMiningPoolV2Base {
+    /// @notice This test verifies triggerBonusClaim rejects empty epoch list.
+    function testTriggerBonusClaimRevertsOnEmptyEpochList() external {
         uint64[] memory epochs = new uint64[](0);
         vm.expectRevert(
             abi.encodeWithSelector(SharedMiningPoolV2.InvalidEpochList.selector, uint256(0), pool.maxEpochsPerClaim())
         );
-        pool.claimBonusRewards(epochs);
+        pool.triggerBonusClaim(epochs);
     }
 
-    /// @notice This test verifies claimBonusRewards rejects non-bonus epochs.
-    function testClaimBonusRewardsRevertsWhenNotBonusEpoch() external {
+    /// @notice This test verifies triggerBonusClaim rejects non-bonus epochs.
+    function testTriggerBonusClaimRevertsWhenNotBonusEpoch() external {
         uint64[] memory epochs = new uint64[](1);
         epochs[0] = 2;
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.NotBonusEpoch.selector, uint64(2)));
-        pool.claimBonusRewards(epochs);
+        pool.triggerBonusClaim(epochs);
     }
 
-    /// @notice This test verifies claimBonusRewards rejects epochs when bonus claims are not open.
-    function testClaimBonusRewardsRevertsWhenNotOpen() external {
+    /// @notice This test verifies triggerBonusClaim rejects epochs when bonus claims are not open.
+    function testTriggerBonusClaimRevertsWhenNotOpen() external {
         bonus.setBonusEpoch(2, true);
 
         uint64[] memory epochs = new uint64[](1);
         epochs[0] = 2;
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.BonusNotOpen.selector, uint64(2)));
-        pool.claimBonusRewards(epochs);
+        pool.triggerBonusClaim(epochs);
     }
 
-    /// @notice This test verifies claimBonusRewards rejects repeated claims for the same epoch.
-    function testClaimBonusRewardsRevertsWhenAlreadyClaimed() external {
+    /// @notice This test verifies triggerBonusClaim rejects repeated claims for the same epoch.
+    function testTriggerBonusClaimRevertsWhenAlreadyClaimed() external {
         vm.prank(user1);
         pool.deposit(100e18);
         _rollToEpoch(2);
@@ -405,37 +407,37 @@ contract ClaimBonusRewardsFailurePathsV2Test is SharedMiningPoolV2Base {
         uint64[] memory epochs = new uint64[](1);
         epochs[0] = 2;
 
-        pool.claimBonusRewards(epochs);
+        pool.triggerBonusClaim(epochs);
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.BonusAlreadyClaimed.selector, uint64(2)));
-        pool.claimBonusRewards(epochs);
+        pool.triggerBonusClaim(epochs);
     }
 }
 
-/// @notice This unit test suite validates `claimUser` failure paths.
-contract ClaimUserFailurePathsV2Test is SharedMiningPoolV2Base {
-    /// @notice This test verifies claimUser rejects zero receiver.
-    function testClaimUserRevertsOnZeroReceiver() external {
+/// @notice This unit test suite validates `claimMyRewards` failure paths.
+contract ClaimMyRewardsFailurePathsV2Test is SharedMiningPoolV2Base {
+    /// @notice This test verifies claimMyRewards rejects zero receiver.
+    function testClaimMyRewardsRevertsOnZeroReceiver() external {
         uint64[] memory epochs = new uint64[](1);
         epochs[0] = 1;
 
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.ZeroAddress.selector));
-        pool.claimUser(epochs, address(0));
+        pool.claimMyRewards(epochs, address(0));
     }
 
-    /// @notice This test verifies claimUser rejects empty epoch list.
-    function testClaimUserRevertsOnEmptyEpochList() external {
+    /// @notice This test verifies claimMyRewards rejects empty epoch list.
+    function testClaimMyRewardsRevertsOnEmptyEpochList() external {
         uint64[] memory epochs = new uint64[](0);
 
         vm.expectRevert(
             abi.encodeWithSelector(SharedMiningPoolV2.InvalidEpochList.selector, uint256(0), pool.maxEpochsPerClaim())
         );
         vm.prank(user1);
-        pool.claimUser(epochs, user1);
+        pool.claimMyRewards(epochs, user1);
     }
 
-    /// @notice This test verifies claimUser reverts when user has nothing claimable.
-    function testClaimUserRevertsWhenNothingToClaim() external {
+    /// @notice This test verifies claimMyRewards reverts when user has nothing claimable.
+    function testClaimMyRewardsRevertsWhenNothingToClaim() external {
         vm.prank(user1);
         pool.deposit(100e18);
 
@@ -447,7 +449,7 @@ contract ClaimUserFailurePathsV2Test is SharedMiningPoolV2Base {
 
         vm.startPrank(user1);
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.NothingToClaim.selector));
-        pool.claimUser(epochs, user1);
+        pool.claimMyRewards(epochs, user1);
         vm.stopPrank();
     }
 }
@@ -492,13 +494,13 @@ contract RevertingMiningV2 {
         return 0;
     }
 
-    function claim(uint64[] calldata) external pure { }
+    function claim(uint64[] calldata) external pure {}
 
-    function stake(uint256) external pure { }
+    function stake(uint256) external pure {}
 
-    function unstake() external pure { }
+    function unstake() external pure {}
 
-    function withdraw() external pure { }
+    function withdraw() external pure {}
 
     function withdrawableAt(address) external pure returns (uint64) {
         return 0;
@@ -513,9 +515,9 @@ contract RevertingMiningV2 {
     }
 }
 
-/// @notice This unit test verifies submitReceiptToMining surfaces a failed low-level call as `MiningCallFailed`.
-contract SubmitReceiptMiningCallFailedFailurePathsV2Test is Test {
-    function testSubmitReceiptToMiningRevertsOnMiningCallFailed() external {
+/// @notice This unit test verifies submitToMining surfaces a failed low-level call as `MiningCallFailed`.
+contract SubmitToMiningCallFailedFailurePathsV2Test is Test {
+    function testSubmitToMiningRevertsOnMiningCallFailed() external {
         address operator = makeAddr("operator");
         address feeRecipient = makeAddr("feeRecipient");
         address depositor = makeAddr("depositor");
@@ -523,6 +525,7 @@ contract SubmitReceiptMiningCallFailedFailurePathsV2Test is Test {
         MockERC20 botcoin = new MockERC20("BOTCOIN", "BOT", 18);
         RevertingMiningV2 mining = new RevertingMiningV2(address(botcoin));
         MockBonusEpoch bonus = new MockBonusEpoch(address(botcoin));
+        bonus.setMining(address(mining));
 
         SharedMiningPoolV2 pool = new SharedMiningPoolV2({
             mining_: address(mining),
@@ -542,12 +545,12 @@ contract SubmitReceiptMiningCallFailedFailurePathsV2Test is Test {
         vm.stopPrank();
 
         mining.setEpoch(2);
-        pool.checkpointEpoch();
+        pool.processEpochCheckpoint();
 
         bytes memory miningCalldata = abi.encodeWithSelector(RevertingMiningV2.submitReceipt.selector, bytes("r"));
 
         vm.prank(operator);
         vm.expectRevert(abi.encodeWithSelector(SharedMiningPoolV2.MiningCallFailed.selector));
-        pool.submitReceiptToMining(miningCalldata);
+        pool.submitToMining(miningCalldata);
     }
 }

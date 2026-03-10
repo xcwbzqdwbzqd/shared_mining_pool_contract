@@ -11,7 +11,7 @@ contract CalldataAbuseResistanceV2Test is SharedMiningPoolV2Base {
         vm.prank(user1);
         pool.deposit(100e18);
         _rollToEpoch(2);
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
 
         bytes memory shortData = hex"1234";
 
@@ -21,7 +21,7 @@ contract CalldataAbuseResistanceV2Test is SharedMiningPoolV2Base {
                 SharedMiningPoolV2.SelectorMismatch.selector, bytes4(0), pool.receiptSubmitSelector()
             )
         );
-        pool.submitReceiptToMining(shortData);
+        pool.submitToMining(shortData);
         vm.stopPrank();
     }
 }

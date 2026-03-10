@@ -27,7 +27,7 @@ contract DepositActivationNextEpochV2Test is SharedMiningPoolV2Base {
 
         _rollToEpoch(2);
 
-        pool.stakePrincipal();
+        pool.stakeAvailablePrincipal();
         pool.unstakeAtEpochEnd();
 
         vm.startPrank(user2);
