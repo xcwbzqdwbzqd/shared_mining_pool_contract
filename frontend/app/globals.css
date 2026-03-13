@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+:root {
+  --canvas: #0f1722;
+  --surface: #121c2e;
+  --surface-strong: #16243a;
+  --surface-soft: #0d1522;
+  --line: rgba(148, 163, 184, 0.16);
+  --line-strong: rgba(248, 250, 252, 0.14);
+  --ink: #e8edf3;
+  --ink-muted: #93a4b8;
+  --ink-soft: #62758d;
+  --brand: #f6b94a;
+  --brand-soft: rgba(246, 185, 74, 0.18);
+  --accent: #39d2c0;
+  --danger: #f97373;
+  --success: #5dd39e;
+  --shadow-panel: 0 16px 60px rgba(7, 14, 28, 0.34);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(57, 210, 192, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(246, 185, 74, 0.1), transparent 24%),
+    linear-gradient(180deg, #09111c 0%, #0f1722 45%, #08101a 100%);
+  color: var(--ink);
+  font-family: var(--font-body), sans-serif;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading), sans-serif;
+  letter-spacing: -0.02em;
+}
+
+a,
+button,
+input,
+textarea,
+select {
+  outline-color: rgba(246, 185, 74, 0.9);
+}
+
+button,
+[role="button"] {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(246, 185, 74, 0.3);
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-surface-soft: var(--surface-soft);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-soft: var(--ink-soft);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+
+@utility panel {
+  background: linear-gradient(180deg, rgba(18, 28, 46, 0.94) 0%, rgba(13, 21, 34, 0.98) 100%);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-panel);
+  border-radius: 1.5rem;
+}
+
+@utility panel-muted {
+  background: linear-gradient(180deg, rgba(15, 23, 34, 0.72) 0%, rgba(9, 17, 28, 0.9) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 1.25rem;
+}
+
+@utility data-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+@utility subtle-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
